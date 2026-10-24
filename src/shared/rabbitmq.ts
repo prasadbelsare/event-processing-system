@@ -15,6 +15,8 @@ export function publishEvent(
     channel: ConfirmChannel,
     event: PackageEvent,
 ): Promise<void> {
+    const shortId = event.eventId.slice(0, 8);
+
     return new Promise((resolve, reject) => {
         channel.sendToQueue(
             QUEUES.main,
@@ -24,7 +26,13 @@ export function publishEvent(
                 contentType: 'application/json',
                 messageId: event.eventId,
             },
-            (err) => (err ? reject(err) : resolve()),
+            (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            },
         );
     });
 }

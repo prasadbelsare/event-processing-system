@@ -14,23 +14,25 @@ async function main() {
     });
 
     app.post('/events', async (req, res) => {
+
         const parsed = PackageEventSchema.safeParse(req.body);
         if (!parsed.success) {
+            ('In server.ts [API] Event is invalid, rejecting it with 400 and NOT queueing it.');
             res.status(400).json({ error: 'invalid_event', issues: parsed.error.issues });
             return;
         }
 
+        const shortId = parsed.data.eventId.slice(0, 8);
         try {
             await publishEvent(channel, parsed.data);
             res.status(202).json({ accepted: true, eventId: parsed.data.eventId });
         } catch (err) {
-            console.error('publish failed', err);
             res.status(503).json({ error: 'queue_unavailable' });
         }
     });
 
     app.listen(config.port, () => {
-        console.log(`API listening on http://localhost:${config.port}`);
+        console.log(`Listening on http://localhost:${config.port}`);
     });
 }
 

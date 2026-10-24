@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
 const status = process.argv[2] ?? 'IN_TRANSIT';
+const packageId = process.argv[3] ?? 'PKG-1001';
 
 const event = {
     eventId: randomUUID(),
-    packageId: 'PKG-1001',
+    packageId,
     eventType: 'STATUS_CHANGED',
     occurredAt: new Date().toISOString(),
     payload: { status, location: 'Denver Hub' },

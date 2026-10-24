@@ -1,31 +1,63 @@
 import amqp from 'amqplib';
-import { config, QUEUES } from '../shared/config';
+import type { ConsumeMessage } from 'amqplib';
+import { config, QUEUES, RETRY_TIERS, MAX_ATTEMPTS } from '../shared/config';
 import { PackageEventSchema } from '../shared/events';
-import { processEvent } from './processEvent';
 import { assertTopology } from '../shared/topology';
+import { processEvent } from './processEvent';
+import { isPermanent } from './errors';
+import { simulateDownstream } from './simulate';
+
+function getAttempt(msg: ConsumeMessage): number {
+    const value = msg.properties.headers?.['x-attempt'];
+    return typeof value === 'number' ? value : 1;
+}
 
 async function main() {
     const connection = await amqp.connect(config.rabbitmqUrl);
-    const channel = await connection.createChannel();
+    // A confirm channel lets us be sure a message reached the retry queue before we ack the original.
+    const channel = await connection.createConfirmChannel();
     await assertTopology(channel);
-
-    // Hold at most 10 unacknowledged messages at a time.
     await channel.prefetch(10);
 
-    console.log(`Worker waiting for messages on ${QUEUES.main}`);
 
     await channel.consume(QUEUES.main, async (msg) => {
         if (!msg) return;
 
+        const attempt = getAttempt(msg);
+        let label = 'unknown';
+
         try {
-            const parsed = PackageEventSchema.parse(JSON.parse(msg.content.toString()));
+            const raw = JSON.parse(msg.content.toString());
+            const parsed = PackageEventSchema.parse(raw);
+            label = parsed.eventId.slice(0, 8);
+
+            simulateDownstream(parsed.packageId, attempt);
             await processEvent(parsed);
+
             channel.ack(msg);
-            console.log(`processed ${parsed.eventType} ${parsed.eventId}`);
         } catch (err) {
-            console.error('failed to process message', err);
-            // requeue = false: don't put it straight back. Phase 2 replaces this with retry + DLQ.
-            channel.nack(msg, false, false);
+            const reason = err instanceof Error ? err.message.split('\n')[0] : String(err);
+
+            if (isPermanent(err)) {
+                channel.nack(msg, false, false);
+                return;
+            }
+
+            if (attempt >= MAX_ATTEMPTS) {
+                channel.nack(msg, false, false);
+                return;
+            }
+
+            const tier = RETRY_TIERS[attempt - 1];
+
+            channel.sendToQueue(tier.queue, msg.content, {
+                persistent: true,
+                contentType: 'application/json',
+                messageId: msg.properties.messageId,
+                headers: { 'x-attempt': attempt + 1 },
+            });
+            await channel.waitForConfirms();
+            channel.ack(msg); // the copy in the retry queue is now the one that counts
         }
     });
 }

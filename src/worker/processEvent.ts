@@ -14,6 +14,7 @@ function deriveState(event: PackageEvent): { status: string; location: string | 
 }
 
 export async function processEvent(event: PackageEvent): Promise<void> {
+    const shortId = event.eventId.slice(0, 8);
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -28,8 +29,9 @@ export async function processEvent(event: PackageEvent): Promise<void> {
 
         // 2. Only touch current state if this event was new.
         if (inserted.rowCount === 1) {
+
             const { status, location } = deriveState(event);
-            await client.query(
+            const updated = await client.query(
                 `INSERT INTO packages (package_id, current_status, current_location, last_event_at)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (package_id) DO UPDATE
@@ -40,6 +42,9 @@ export async function processEvent(event: PackageEvent): Promise<void> {
          WHERE EXCLUDED.last_event_at > packages.last_event_at`,
                 [event.packageId, status, location, event.occurredAt],
             );
+
+        } else {
+            console.log(`Event ${shortId} was already processed before (duplicate), so nothing was changed.`);
         }
 
         await client.query('COMMIT');

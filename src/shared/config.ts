@@ -14,3 +14,13 @@ export const QUEUES = {
 export const EXCHANGES = {
     dead: 'events.dead',
 } as const;
+
+// Each failed attempt moves the message to the next tier.
+export const RETRY_TIERS = [
+    { queue: 'events.retry.5s', delayMs: 5_000 },
+    { queue: 'events.retry.15s', delayMs: 15_000 },
+    { queue: 'events.retry.30s', delayMs: 30_000 },
+] as const;
+
+// First try + one retry per tier = 4 attempts in total.
+export const MAX_ATTEMPTS = RETRY_TIERS.length + 1;
