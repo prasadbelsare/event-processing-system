@@ -2,11 +2,12 @@ import amqp from 'amqplib';
 import type { ConfirmChannel } from 'amqplib';
 import { config, QUEUES } from './config';
 import type { PackageEvent } from './events';
+import { assertTopology } from './topology';
 
 export async function connectRabbit() {
     const connection = await amqp.connect(config.rabbitmqUrl);
     const channel = await connection.createConfirmChannel();
-    await channel.assertQueue(QUEUES.main, { durable: true });
+    await assertTopology(channel);
     return { connection, channel };
 }
 

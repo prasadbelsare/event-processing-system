@@ -2,11 +2,12 @@ import amqp from 'amqplib';
 import { config, QUEUES } from '../shared/config';
 import { PackageEventSchema } from '../shared/events';
 import { processEvent } from './processEvent';
+import { assertTopology } from '../shared/topology';
 
 async function main() {
     const connection = await amqp.connect(config.rabbitmqUrl);
     const channel = await connection.createChannel();
-    await channel.assertQueue(QUEUES.main, { durable: true });
+    await assertTopology(channel);
 
     // Hold at most 10 unacknowledged messages at a time.
     await channel.prefetch(10);

@@ -9,7 +9,8 @@
     "api": "tsx src/api/server.ts",
     "send": "tsx scripts/send-event.ts",
     "worker": "tsx src/worker/worker.ts",
-    "send-dup": "tsx scripts/send-duplicate.ts"
+    "send-dup": "tsx scripts/send-duplicate.ts",
+    "send-poison": "tsx scripts/send-poison.ts"
   },
   "keywords": [],
   "author": "",

@@ -8,4 +8,9 @@ export const config = {
 
 export const QUEUES = {
     main: 'events.main',
+    dlq: 'events.dlq',
+} as const;
+
+export const EXCHANGES = {
+    dead: 'events.dead',
 } as const;
