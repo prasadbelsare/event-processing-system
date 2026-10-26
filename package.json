@@ -12,7 +12,8 @@
     "send-dup": "tsx scripts/send-duplicate.ts",
     "send-poison": "tsx scripts/send-poison.ts",
     "test:order": "tsx scripts/test-ordering.ts",
-    "test:concurrency": "tsx scripts/test-concurrency.ts"
+    "test:concurrency": "tsx scripts/test-concurrency.ts",
+    "test:crash": "tsx scripts/test-crash.ts"
   },
   "keywords": [],
   "author": "",

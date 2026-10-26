@@ -5,6 +5,7 @@ export const config = {
     databaseUrl: process.env.DATABASE_URL ?? '',
     port: Number(process.env.PORT ?? 3000),
     apiUrl: process.env.API_URL ?? 'http://127.0.0.1:3000',
+    processDelayMs: Number(process.env.PROCESS_DELAY_MS ?? 0),
 };
 
 export const QUEUES = {
