@@ -10,7 +10,9 @@
     "send": "tsx scripts/send-event.ts",
     "worker": "tsx src/worker/worker.ts",
     "send-dup": "tsx scripts/send-duplicate.ts",
-    "send-poison": "tsx scripts/send-poison.ts"
+    "send-poison": "tsx scripts/send-poison.ts",
+    "test:order": "tsx scripts/test-ordering.ts",
+    "test:concurrency": "tsx scripts/test-concurrency.ts"
   },
   "keywords": [],
   "author": "",

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-
+import { config } from '../src/shared/config';
 const status = process.argv[2] ?? 'IN_TRANSIT';
 const packageId = process.argv[3] ?? 'PKG-1001';
 
@@ -12,7 +12,7 @@ const event = {
 };
 
 async function main() {
-    const res = await fetch('http://127.0.0.1:3000/events', {
+    const res = await fetch(`${config.apiUrl}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(event),
