@@ -13,7 +13,8 @@
     "send-poison": "tsx scripts/send-poison.ts",
     "test:order": "tsx scripts/test-ordering.ts",
     "test:concurrency": "tsx scripts/test-concurrency.ts",
-    "test:crash": "tsx scripts/test-crash.ts"
+    "test:crash": "tsx scripts/test-crash.ts",
+    "test:db-outage": "tsx scripts/test-db-outage.ts"
   },
   "keywords": [],
   "author": "",

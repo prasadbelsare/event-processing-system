@@ -15,11 +15,12 @@ function deriveState(event: PackageEvent): { status: string; location: string | 
 
 export async function processEvent(event: PackageEvent): Promise<void> {
     const shortId = event.eventId.slice(0, 8);
-    const client = await pool.connect();
+    const client = await pool.connect(); // throws if the database is unreachable
+    let broken = false;
     try {
         await client.query('BEGIN');
+        console.log(`[DB] Started a transaction for event ${shortId} (all steps succeed together or not at all).`);
 
-        // 1. Append to history. If this event_id already exists, it's a duplicate: do nothing.
         const inserted = await client.query(
             `INSERT INTO package_events (event_id, package_id, event_type, occurred_at, payload)
        VALUES ($1, $2, $3, $4, $5)
@@ -27,8 +28,8 @@ export async function processEvent(event: PackageEvent): Promise<void> {
             [event.eventId, event.packageId, event.eventType, event.occurredAt, event.payload],
         );
 
-        // 2. Only touch current state if this event was new.
         if (inserted.rowCount === 1) {
+            console.log(`[DB] Event ${shortId} is new, so it was added to the history table.`);
 
             const { status, location } = deriveState(event);
             const updated = await client.query(
@@ -43,15 +44,27 @@ export async function processEvent(event: PackageEvent): Promise<void> {
                 [event.packageId, status, location, event.occurredAt],
             );
 
+            if (updated.rowCount === 1) {
+                console.log(`[DB] Package ${event.packageId} current status is now ${status}.`);
+            } else {
+                console.log(`[DB] Event ${shortId} is older than what we already have, so the current status was left unchanged.`);
+            }
         } else {
-            console.log(`Event ${shortId} was already processed before (duplicate), so nothing was changed.`);
+            console.log(`[DB] Event ${shortId} was already processed before (duplicate), so nothing was changed.`);
         }
 
         await client.query('COMMIT');
+        console.log(`[DB] Transaction for event ${shortId} committed.`);
     } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
+        try {
+            await client.query('ROLLBACK');
+            console.log(`[DB] Something failed, so the transaction for event ${shortId} was rolled back.`);
+        } catch {
+            broken = true; // the connection itself is dead, so rollback is impossible (and unnecessary)
+            console.log(`[DB] The connection died mid-transaction for event ${shortId}; the database will discard it.`);
+        }
+        throw err; // the worker decides: retry or DLQ
     } finally {
-        client.release();
+        client.release(broken); // true = destroy this connection instead of reusing it
     }
 }
