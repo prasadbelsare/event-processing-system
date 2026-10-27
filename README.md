@@ -12,7 +12,7 @@ This project demonstrates a robust implementation of **asynchronous event proces
 
 ---
 
-## Key Features
+## 🌟 Key Features
 
 - **Decoupled Ingestion**: The API replies `202 Accepted` only after RabbitMQ confirms it stored the message (publisher confirms), so an accepted event is never silently lost.
 - **Retry with Staged Backoff**: Transient failures go through TTL delay queues (5s, 15s, 30s) and return to the main queue automatically. No timers in application code.
@@ -24,7 +24,7 @@ This project demonstrates a robust implementation of **asynchronous event proces
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
 ```mermaid
 graph TD
